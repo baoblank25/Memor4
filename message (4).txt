@@ -1,0 +1,573 @@
+# Memor4 — Every Conversation Remembered
+
+<div align="center">
+
+**An AI-powered memory companion for caregiving, helping individuals with memory conditions maintain connections and stay safe.**
+
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-00a393.svg)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[Features](#features) • [Demo](#demo) • [Installation](#installation) • [Configuration](#configuration) • [Usage](#usage) • [Architecture](#architecture)
+
+</div>
+
+---
+
+## Overview
+
+Memor4 (Memento Protocol) is a real-time AI system designed to support individuals with memory-related conditions like Alzheimer's and dementia. It combines computer vision, speech recognition, and intelligent memory management to help users recognize loved ones, recall important information, and stay safe from hazards.
+
+### Key Capabilities
+
+- **🎭 Face Recognition**: Identifies family members and caregivers in real-time
+- **💭 Conversation Memory**: Extracts and stores important facts from conversations
+- **🗣️ Voice Interaction**: Natural conversation support with text-to-speech feedback
+- **🛡️ Safety Monitoring**: Detects allergens and medication hazards (Overwatch Mode)
+- **👨‍👩‍👧‍👦 Caregiver Dashboard**: Web interface for family members to manage profiles and memories
+- **📊 Memory Analytics**: Track conversations, memories, and interaction patterns
+
+---
+
+## Features
+
+### 1. **Face Recognition & Person Detection**
+- Real-time facial recognition using DeepFace (Facenet model)
+- Color-based fallback detection for low-light conditions
+- Automatic person announcements with relationship context
+- Persistent memory of previous conversations
+
+### 2. **Intelligent Memory System**
+- Automatic fact extraction from conversations using LLMs
+- Topic-based memory organization
+- Memory statistics and analytics
+- SQLite-based persistent storage
+- Caregiver notes and manual memory additions
+
+### 3. **Overwatch Safety Mode**
+- Computer vision-based hazard detection using Overshoot SDK
+- Allergen monitoring (e.g., energy drinks)
+- Medication tracking with dose logging
+- Real-time audio and visual alerts
+- Automatic midnight reset for daily medications
+
+### 4. **Multi-Modal Interaction**
+- Browser-based speech recognition
+- Text-to-speech using ElevenLabs API (with fallback)
+- WebSocket-based real-time communication
+- Visual HUD with person info and memory prompts
+
+### 5. **Caregiver Dashboard**
+- Register family members with photos and bios
+- View conversation history and memory timeline
+- Add manual notes and memories
+- Monitor system statistics
+- Face enrollment for recognition
+
+---
+
+## Demo
+
+### Dashboard View
+The main dashboard provides an overview of registered people and recent memories:
+
+- **Left Panel**: List of family members with photos, relationships, and memory counts
+- **Right Panel**: Real-time memory stream showing facts extracted from conversations
+- **Header Stats**: Total people, memories, and interaction counts
+
+### HUD (Heads-Up Display)
+Active during conversations, showing:
+
+- Detected person's name and relationship
+- Last conversation reminder
+- Real-time transcription
+- Memory extraction in progress
+
+### Overwatch Safety Mode
+Specialized monitoring interface featuring:
+
+- Live camera feed
+- Hazard detection status
+- Medication tracking
+- Visual and audio alerts
+
+---
+
+## Installation
+
+### Prerequisites
+
+- **Python 3.8+**
+- **pip** (Python package manager)
+- **Webcam** (for face recognition and safety monitoring)
+- **API Keys** (optional but recommended):
+  - [Overshoot AI](https://overshoot.ai) - Vision and safety monitoring
+  - [ElevenLabs](https://elevenlabs.io) - Text-to-speech
+  - [Perplexity](https://www.perplexity.ai) - LLM for fact extraction
+  - [LiveKit](https://livekit.io) - Advanced audio transcription
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/memor4.git
+cd memor4
+```
+
+### Step 2: Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+**requirements.txt:**
+```txt
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+websockets>=11.0
+python-dotenv>=1.0.0
+colorama>=0.4.6
+pydantic>=2.0.0
+requests>=2.31.0
+deepface>=0.0.79
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0
+```
+
+### Step 3: Create Configuration File
+
+Create a `.env` file in the project root:
+
+```bash
+# Vision (Overshoot AI)
+OVERSHOOT_API_KEY=your_overshoot_api_key_here
+
+# Text-to-Speech (ElevenLabs)
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+
+# LLM for Fact Extraction (Perplexity)
+PERPLEXITY_API_KEY=your_perplexity_api_key_here
+
+# Audio Transcription (LiveKit) - Optional
+LIVEKIT_API_KEY=your_livekit_api_key_here
+LIVEKIT_API_SECRET=your_livekit_api_secret_here
+LIVEKIT_URL=wss://your-project.livekit.cloud
+
+# Demo Mode (optional)
+DEMO_MODE=false
+```
+
+### Step 4: Initialize Database
+
+```bash
+python seed_db.py
+```
+
+This creates an empty SQLite database ready for adding users and memories.
+
+**Optional**: Use `--clear` flag to reset an existing database:
+
+```bash
+python seed_db.py --clear
+```
+
+### Step 5: Start the Server
+
+```bash
+python server.py
+```
+
+The server will start at `http://localhost:8000`
+
+---
+
+## Configuration
+
+### API Keys
+
+While the system has fallbacks for missing API keys, full functionality requires:
+
+| Service | Required For | Fallback |
+|---------|-------------|----------|
+| **Overshoot AI** | Vision & hazard detection | Color-based detection |
+| **ElevenLabs** | High-quality voice | Browser TTS or pyttsx3 |
+| **Perplexity** | Fact extraction | Regex-based extraction |
+| **LiveKit** | Advanced transcription | Browser Speech Recognition |
+
+### Timing Constants
+
+Adjust in `config.py`:
+
+```python
+PERSON_COOLDOWN_SECONDS = 10        # Re-announcement delay
+DETECTION_CONFIDENCE_FRAMES = 2     # Detection confirmation threshold
+ABSENCE_RESET_SECONDS = 5           # Conversation reset time
+RECORDING_DURATION_SECONDS = 10     # Audio recording length
+```
+
+### Face Recognition
+
+```python
+FACE_RECOGNITION_ENABLED = True
+FACE_MODEL_NAME = "Facenet"           # Fast and accurate
+FACE_DETECTOR_BACKEND = "retinaface"  # High accuracy
+FACE_SIMILARITY_THRESHOLD = 0.6       # Match sensitivity
+```
+
+---
+
+## Usage
+
+### 1. Register Family Members
+
+1. Open `http://localhost:8000`
+2. Click "Add Family Member"
+3. Fill in details:
+   - Name
+   - Relationship (e.g., "Daughter", "Nurse")
+   - Visual marker color (for fallback detection)
+   - Bio (optional)
+   - Upload photo for face recognition
+4. Click "Register"
+
+### 2. Start a Conversation
+
+1. Click "Start Conversation" in the dashboard
+2. Allow camera and microphone access
+3. System will detect and announce recognized people
+4. Speak naturally - the system transcribes and extracts facts
+5. Memories are automatically saved and displayed
+
+### 3. Enable Safety Mode
+
+1. Click "Sentinel Mode" to activate Overwatch
+2. Configure allergy and medication information
+3. System monitors for:
+   - Allergens (e.g., Monster Energy drinks)
+   - Medication bottles (tracks if already taken)
+4. Receive immediate alerts for detected hazards
+
+### 4. Review Memories
+
+- **Memory Stream**: View recent facts in real-time
+- **Person Cards**: Click to see individual memory counts
+- **Caregiver Notes**: Add manual observations and reminders
+
+---
+
+## Architecture
+
+### Backend (Python/FastAPI)
+
+```
+server.py          # Main FastAPI server with REST API + WebSocket
+memory.py          # SQLite database layer with thread-safe operations
+vision.py          # Face recognition and person detection
+audio.py           # Speech transcription and TTS
+config.py          # Configuration management with validation
+seed_db.py         # Database initialization script
+```
+
+### Frontend (Vanilla JS)
+
+```
+static/
+├── index.html              # Single-page application
+├── overshoot-sentinel.js   # Safety monitoring module
+└── faces/                  # Stored face images for recognition
+```
+
+### Database Schema
+
+```sql
+-- People
+known_people (person_id, display_name, relationship, visual_marker, bio, face_image_path)
+
+-- Memories
+memories (id, person_id, fact, topic, timestamp, status, source, confidence)
+
+-- Face Recognition
+face_embeddings (id, person_id, embedding, model_name)
+
+-- Conversation Tracking
+last_conversations (person_id, summary, topics, timestamp)
+```
+
+### Communication Flow
+
+```
+┌──────────┐     WebSocket      ┌──────────┐
+│ Frontend │ ←─────────────────→ │  Server  │
+│  (HTML)  │                     │ (FastAPI)│
+└──────────┘                     └──────────┘
+     │                                 │
+     │                                 ├─→ memory.py (SQLite)
+     │                                 ├─→ vision.py (DeepFace)
+     │                                 ├─→ audio.py (Transcription)
+     │                                 └─→ Overshoot SDK (Hazards)
+     │
+     └─→ Browser APIs (Camera, Mic, SpeechRecognition)
+```
+
+---
+
+## API Reference
+
+### REST Endpoints
+
+#### People Management
+
+```http
+GET  /api/people              # List all registered people
+POST /api/people              # Register new person
+POST /api/people/{id}/enroll  # Enroll face embedding
+DELETE /api/people/{id}       # Delete person and memories
+```
+
+#### Memories
+
+```http
+GET  /api/memories              # Get all memories
+GET  /api/memories/recent       # Get recent memories
+POST /api/transcript            # Process conversation transcript
+POST /api/audio-transcribe      # Transcribe audio to text
+POST /api/caregiver-note        # Add manual memory
+```
+
+#### Safety State (Overwatch)
+
+```http
+GET  /api/safety-state              # Get current safety configuration
+POST /api/safety-state/reset        # Reset medication tracking
+POST /api/safety-state/meds-taken   # Mark medication as taken
+GET  /api/overshoot-key             # Get Overshoot API key
+```
+
+#### Statistics
+
+```http
+GET /api/stats  # Get memory and interaction statistics
+```
+
+### WebSocket Events
+
+#### From Server → Client
+
+```javascript
+{
+  "type": "recognition",
+  "person_id": "john_doe",
+  "name": "John Doe",
+  "relationship": "Son",
+  "marker": "blue",
+  "whisper": "Continue the conversation about his new job...",
+  "last_conversation": {...}
+}
+
+{
+  "type": "memory_saved",
+  "fact": "John started a new job at TechCorp",
+  "topic": "career",
+  "person_id": "john_doe"
+}
+
+{
+  "type": "person_away",
+  "person_id": "john_doe"
+}
+```
+
+#### From Client → Server
+
+```javascript
+{
+  "type": "transcript",
+  "text": "I heard you started a new job!",
+  "person_id": "john_doe"
+}
+
+{
+  "type": "heartbeat"
+}
+```
+
+---
+
+## Safety & Privacy
+
+### Data Storage
+
+- All data stored **locally** in SQLite database (`memories.db`)
+- Face embeddings stored as binary blobs (not images)
+- No cloud storage or external data transmission (except API calls)
+- Database can be backed up or deleted at any time
+
+### API Security
+
+- API keys stored in `.env` (never committed to git)
+- Add `.env` to `.gitignore`
+- Overshoot API key exposed to frontend only for Sentinel mode
+
+### Recommendations
+
+- Run on local network only (do not expose port 8000 to internet)
+- Use strong, unique API keys
+- Regularly backup `memories.db` and `static/faces/` directory
+- Review and delete sensitive memories as needed
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+#### "No camera detected"
+- Ensure browser has camera permissions
+- Check if another application is using the camera
+- Try a different browser (Chrome/Edge recommended)
+
+#### "Face recognition not working"
+- Verify face image is clear and well-lit
+- Check that `FACE_RECOGNITION_ENABLED = True` in `config.py`
+- Ensure DeepFace models are downloaded (happens on first run)
+
+#### "Speech recognition not starting"
+- Check microphone permissions in browser
+- Verify HTTPS or localhost (required for Web Speech API)
+- Try refreshing the page
+
+#### "Overshoot API errors"
+- Verify API key is correct in `.env`
+- Check Overshoot account has credits
+- Review network logs in browser console
+
+#### "Database locked" errors
+- Close any other connections to `memories.db`
+- Restart the server
+- Check file permissions on database
+
+---
+
+## Development
+
+### Running in Development Mode
+
+```bash
+# With auto-reload
+uvicorn server:app --reload --host 0.0.0.0 --port 8000
+
+# With debug logging
+python server.py --debug
+```
+
+### Project Structure
+
+```
+memor4/
+├── server.py                 # FastAPI application
+├── memory.py                 # Database operations
+├── vision.py                 # Computer vision
+├── audio.py                  # Audio processing
+├── config.py                 # Configuration
+├── seed_db.py               # Database seeding
+├── .env                     # API keys (not in git)
+├── requirements.txt         # Python dependencies
+├── memories.db              # SQLite database
+└── static/
+    ├── index.html           # Frontend SPA
+    ├── overshoot-sentinel.js # Safety module
+    └── faces/               # Face images
+```
+
+### Adding New Features
+
+1. **New Memory Source**: Modify `audio.py` or add new extraction logic
+2. **New Person Attribute**: Update `memory.py` schema and frontend forms
+3. **New Safety Rule**: Extend prompt in `overshoot-sentinel.js`
+4. **New API Endpoint**: Add route in `server.py` with proper error handling
+
+---
+
+## Roadmap
+
+- [ ] **Multi-language support** for international families
+- [ ] **Mobile app** for remote caregiver monitoring
+- [ ] **Voice activity detection** for automatic conversation start
+- [ ] **Memory search** with natural language queries
+- [ ] **Integration with smart home** devices (lights, locks, alarms)
+- [ ] **Medication reminder** notifications
+- [ ] **Export memories** to PDF or JSON
+- [ ] **Multi-user support** with authentication
+- [ ] **Cloud sync** option for family collaboration
+- [ ] **Enhanced analytics** with memory retention graphs
+
+---
+
+## Contributing
+
+Contributions are welcome! Please follow these guidelines:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Commit changes**: `git commit -m 'Add amazing feature'`
+4. **Push to branch**: `git push origin feature/amazing-feature`
+5. **Open a Pull Request**
+
+### Code Style
+
+- Follow PEP 8 for Python code
+- Use meaningful variable names
+- Add docstrings to functions
+- Include comments for complex logic
+- Test API changes with sample data
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## Acknowledgments
+
+- **DeepFace** - Face recognition framework
+- **Overshoot AI** - Real-time computer vision API
+- **ElevenLabs** - High-quality text-to-speech
+- **FastAPI** - Modern Python web framework
+- **Perplexity** - LLM inference for fact extraction
+
+---
+
+## Support
+
+For questions, issues, or feature requests:
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/memor4/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/memor4/discussions)
+- **Email**: support@memor4.com
+
+---
+
+## Citation
+
+If you use this project in your research or product, please cite:
+
+```bibtex
+@software{memor4_2024,
+  title = {Memor4: AI Memory Companion for Caregiving},
+  author = {Your Name},
+  year = {2024},
+  url = {https://github.com/yourusername/memor4}
+}
+```
+
+---
+
+<div align="center">
+
+**Made with ❤️ for families affected by memory conditions**
+
+[⬆ Back to Top](#memor4--every-conversation-remembered)
+
+</div>
