@@ -1,1 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memor4 — Every Conversation Remembered</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: rgba(255,255,255,0.03);
+            --bg-card-hover: rgba(255,255,255,0.06);
+            --border: rgba(255,255,255,0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255,255,255,0.7);
+            --text-muted: rgba(255,255,255,0.4);
+            --accent: #4fd1c5;
+            --accent-dim: rgba(79,209,197,0.2);
+            --red: #f56565; --blue: #4299e1; --green: #48bb78;
+            --purple: #9f7aea; --orange: #ed8936; --amber: #f6ad55;
+            --font-sans: 'DM Sans', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+            --radius: 12px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:var(--font-sans); background:var(--bg-primary); color:var(--text-primary); min-height:100vh; line-height:1.6; }
+        .hidden { display:none !important; }
+        
+        .btn { display:inline-flex; align-items:center; gap:8px; padding:12px 24px; border:none; border-radius:8px; font-family:var(--font-sans); font-size:14px; font-weight:500; cursor:pointer; transition:all 0.2s; }
+        .btn-primary { background:var(--accent); color:var(--bg-primary); }
+        .btn-primary:hover { background:#5dddd0; box-shadow:0 0 30px rgba(79,209,197,0.3); }
+        .btn-secondary { background:var(--bg-card); color:var(--text-primary); border:1px solid var(--border); }
+        .btn-secondary:hover { background:var(--bg-card-hover); }
+        .btn-ghost { background:transparent; color:var(--text-secondary); }
+        .btn-ghost:hover { background:var(--bg-card); color:var(--text-primary); }
+        .btn-danger { background:rgba(245,101,101,0.1); color:var(--red); border:1px solid rgba(245,101,101,0.2); }
+        
+        .marker-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+        .marker-dot.lg { width:40px; height:40px; }
+        .person-avatar { width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0; border:2px solid var(--border); }
+        .marker-red { background:var(--red); }
+        .marker-blue { background:var(--blue); }
+        .marker-green { background:var(--green); }
+        .marker-purple { background:var(--purple); }
+        .marker-orange { background:var(--orange); }
+        
+        .chip { display:inline-block; padding:2px 8px; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; border-radius:4px; background:var(--accent-dim); color:var(--accent); }
+        
+        .toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+        .toast { padding:12px 20px; border-radius:8px; font-size:14px; animation:slideIn 0.3s; }
+        .toast.success { background:rgba(72,187,120,0.2); border:1px solid rgba(72,187,120,0.3); color:var(--green); }
+        .toast.error { background:rgba(245,101,101,0.2); border:1px solid rgba(245,101,101,0.3); color:var(--red); }
+        @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
 
+        /* DASHBOARD */
+        #dashboard { min-height:100vh; display:flex; flex-direction:column; }
+        .dash-header { padding:24px 40px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+        .logo { display:flex; align-items:baseline; gap:4px; }
+        .logo h1 { font-size:28px; font-weight:600; letter-spacing:-0.5px; }
+        .logo .pulse { display:inline-block; animation:heartbeat 2s ease-in-out infinite; }
+        @keyframes heartbeat { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15);color:var(--accent)} }
+        .logo .tagline { font-size:14px; color:var(--text-muted); margin-left:16px; }
+        .header-stats { display:flex; gap:32px; align-items:center; }
+        .stat { text-align:center; }
+        .stat-value { font-size:24px; font-weight:600; color:var(--accent); font-family:var(--font-mono); }
+        .stat-label { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; }
+        .dash-content { flex:1; display:grid; grid-template-columns:340px 1fr; gap:1px; background:var(--border); }
+        .panel-left { background:var(--bg-primary); padding:24px; display:flex; flex-direction:column; }
+        .panel-right { background:var(--bg-secondary); padding:24px 32px; display:flex; flex-direction:column; }
+        .panel-title { font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:16px; }
+        .panel-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+        .people-list { flex:1; display:flex; flex-direction:column; gap:8px; overflow-y:auto; }
+        .person-card { display:flex; align-items:center; gap:12px; padding:16px; border-radius:var(--radius); background:var(--bg-card); border:1px solid transparent; cursor:pointer; transition:all 0.2s; }
+        .person-card:hover { background:var(--bg-card-hover); border-color:var(--border); }
+        .person-info { flex:1; min-width:0; }
+        .person-name { font-weight:500; font-size:15px; margin-bottom:2px; }
+        .person-relation { font-size:13px; color:var(--text-muted); }
+        .person-meta { display:flex; align-items:center; gap:8px; }
+        .memory-count { font-size:12px; color:var(--text-muted); font-family:var(--font-mono); }
+        .delete-btn { opacity:0; padding:4px 8px; font-size:12px; transition:opacity 0.2s; }
+        .person-card:hover .delete-btn { opacity:1; }
+        .add-person-btn { margin-top:16px; width:100%; justify-content:center; border-style:dashed; }
+        .memory-stream { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
+        .memory-item { display:flex; gap:12px; padding:16px; background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border); animation:fadeIn 0.3s; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+        .memory-content { flex:1; }
+        .memory-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+        .memory-person { font-weight:500; font-size:14px; }
+        .memory-fact { font-size:15px; color:var(--text-secondary); margin-bottom:8px; }
+        .memory-footer { display:flex; align-items:center; gap:12px; }
+        .memory-time { font-size:12px; color:var(--text-muted); font-family:var(--font-mono); }
+        .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-muted); text-align:center; padding:40px; }
+
+        /* ONBOARDING MODAL */
+        #onboarding { position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); display:flex; align-items:flex-start; justify-content:center; z-index:1000; overflow-y:auto; padding:24px 16px; }
+        .onboard-card { width:100%; max-width:480px; padding:32px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:20px; margin:auto; }
+        .onboard-header { margin-bottom:24px; }
+        .onboard-header h2 { font-size:22px; font-weight:600; margin-bottom:4px; }
+        .onboard-header p { color:var(--text-muted); font-size:14px; }
+        .form-group { margin-bottom:20px; }
+        .form-label { display:block; font-size:13px; font-weight:500; color:var(--text-secondary); margin-bottom:8px; }
+        .form-input { width:100%; padding:12px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-family:var(--font-sans); font-size:15px; transition:border-color 0.2s; }
+        .form-input:focus { outline:none; border-color:var(--accent); }
+        .form-input::placeholder { color:var(--text-muted); }
+        select.form-input { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; }
+        select.form-input option { background:var(--bg-secondary); color:var(--text-primary); }
+        textarea.form-input { resize:vertical; min-height:80px; }
+        .color-picker { display:flex; gap:12px; }
+        .color-option { position:relative; }
+        .color-option input { position:absolute; opacity:0; width:0; height:0; }
+        .color-swatch { width:44px; height:44px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
+        .color-option input:checked + .color-swatch { border-color:var(--text-primary); transform:scale(1.1); }
+        .color-swatch svg { width:20px; height:20px; color:white; opacity:0; }
+        .color-option input:checked + .color-swatch svg { opacity:1; }
+        .photo-upload { border:2px dashed var(--border); border-radius:var(--radius); padding:24px; text-align:center; color:var(--text-muted); transition:all 0.2s; cursor:pointer; position:relative; overflow:hidden; }
+        .photo-upload:hover { border-color:var(--accent); background:var(--accent-dim); }
+        .photo-upload.has-image { border-style:solid; border-color:var(--green); padding:0; }
+        .photo-upload input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+        .photo-upload-preview { width:100%; height:200px; object-fit:cover; border-radius:calc(var(--radius) - 2px); display:none; }
+        .photo-upload.has-image .photo-upload-preview { display:block; }
+        .photo-upload.has-image .photo-upload-content { display:none; }
+        .photo-upload-content { display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 0; }
+        .photo-upload-content svg { width:40px; height:40px; opacity:0.5; }
+        .photo-upload-content p { font-size:14px; }
+        .photo-upload-content .hint { font-size:12px; opacity:0.7; }
+        .photo-upload-actions { position:absolute; bottom:8px; right:8px; display:none; }
+        .photo-upload.has-image .photo-upload-actions { display:flex; gap:4px; }
+        .photo-upload-actions button { padding:4px 8px; font-size:11px; background:rgba(0,0,0,0.7); border:none; border-radius:4px; color:white; cursor:pointer; }
+        .photo-upload-actions button:hover { background:rgba(0,0,0,0.9); }
+        .face-status { display:flex; align-items:center; gap:6px; font-size:12px; margin-top:8px; }
+        .face-status.enrolled { color:var(--green); }
+        .face-status.not-enrolled { color:var(--text-muted); }
+        .form-actions { display:flex; gap:12px; margin-top:28px; }
+        .form-actions .btn { flex:1; justify-content:center; }
+
+        /* ONBOARDING LOADING SCREEN */
+        .onboard-loading { position:absolute; inset:0; background:rgba(10,10,15,0.98); backdrop-filter:blur(10px); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:20; border-radius:20px; }
+        .onboard-loading.active { display:flex; }
+        .loading-spinner-container { position:relative; width:120px; height:120px; margin-bottom:32px; }
+        .loading-ring { position:absolute; inset:0; border:3px solid transparent; border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
+        .loading-ring:nth-child(2) { border-top-color:var(--blue); animation-duration:1.5s; animation-direction:reverse; inset:10px; }
+        .loading-ring:nth-child(3) { border-top-color:var(--green); animation-duration:2s; inset:20px; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .loading-profile { position:absolute; inset:30px; border-radius:50%; overflow:hidden; border:2px solid var(--accent); box-shadow:0 0 20px rgba(79,209,197,0.3); }
+        .loading-profile img { width:100%; height:100%; object-fit:cover; }
+        .loading-profile::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, transparent 0%, transparent 50%, rgba(79,209,197,0.3) 100%); animation:shimmer 2s ease-in-out infinite; }
+        @keyframes shimmer { 0%,100%{opacity:0.3} 50%{opacity:1} }
+        .loading-status { display:flex; flex-direction:column; align-items:center; gap:12px; }
+        .loading-title { font-size:20px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:2px; }
+        .loading-text { font-size:14px; color:var(--text-muted); text-align:center; max-width:300px; }
+        .loading-steps { display:flex; flex-direction:column; gap:8px; margin-top:20px; }
+        .loading-step { display:flex; align-items:center; gap:12px; padding:8px 16px; background:rgba(79,209,197,0.05); border-radius:8px; border-left:3px solid transparent; transition:all 0.3s; }
+        .loading-step.active { border-left-color:var(--accent); background:rgba(79,209,197,0.15); }
+        .loading-step.complete { border-left-color:var(--green); background:rgba(72,187,120,0.1); }
+        .loading-step-icon { width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
+        .loading-step-icon .spinner { width:16px; height:16px; border:2px solid var(--accent); border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; }
+        .loading-step-icon .check { color:var(--green); font-size:18px; }
+        .loading-step-text { font-size:13px; color:var(--text-secondary); flex:1; }
+
+        /* HUD */
+        #hud { position:fixed; inset:0; width:100vw; height:100vh; background:var(--bg-primary); z-index:2000; }
+        .hud-video { position:absolute; inset:0; width:100vw; height:100vh; background:black; }
+        .hud-video video { width:100vw; height:100vh; object-fit:cover; opacity:0.7; background:black; }
+        .hud-overlay { position:absolute; inset:0; background:rgba(10,10,15,0.4); backdrop-filter:blur(2px); }
+        .hud-ui { position:absolute; inset:0; display:flex; flex-direction:column; padding:24px; pointer-events:none; }
+        .hud-ui > * { pointer-events:auto; }
+        .hud-topbar { display:flex; justify-content:space-between; align-items:center; }
+        .conn-status { display:flex; align-items:center; gap:8px; padding:8px 16px; background:var(--bg-card); backdrop-filter:blur(10px); border-radius:8px; font-size:13px; }
+        .status-dot { width:8px; height:8px; border-radius:50%; background:var(--red); }
+        .status-dot.on { background:var(--green); box-shadow:0 0 8px var(--green); }
+        .hud-time { text-align:center; }
+        .hud-clock { font-size:32px; font-weight:300; font-family:var(--font-mono); letter-spacing:2px; }
+        .hud-duration { font-size:12px; color:var(--text-muted); margin-top:4px; }
+        .hud-center { flex:1; display:flex; flex-direction:column; align-items:flex-end; justify-content:center; padding-right:5%; gap:16px; }
+        .rec-card { width:360px; padding:24px; background:rgba(18,18,26,0.85); backdrop-filter:blur(20px); border:1px solid var(--border); border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,0.4),0 0 40px rgba(79,209,197,0.15); transform:translateX(120%); transition:transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s, visibility 0.4s; border-left:4px solid var(--accent); opacity:0; visibility:hidden; pointer-events:none; }
+        .rec-card.show { transform:translateX(0); opacity:1; visibility:visible; pointer-events:auto; }
+        .rec-card.marker-red { border-left-color:var(--red); }
+        .rec-card.marker-blue { border-left-color:var(--blue); }
+        .rec-card.marker-green { border-left-color:var(--green); }
+        .rec-card.marker-black { border-left-color:#333; }
+        .rec-card.person-away { opacity:0.5; transform:translateX(0) scale(0.95); }
+        .rec-name { font-size:28px; font-weight:600; margin-bottom:4px; }
+        .rec-relation { font-size:16px; color:var(--text-muted); }
+        .rec-divider { height:1px; background:var(--border); margin:16px 0; }
+        .rec-whisper { font-size:16px; line-height:1.7; color:var(--text-secondary); }
+        .alert-card { width:320px; padding:20px; background:rgba(246,173,85,0.1); backdrop-filter:blur(20px); border:1px solid rgba(246,173,85,0.3); border-radius:var(--radius); display:flex; gap:12px; transform:translateX(120%); transition:transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s, visibility 0.4s; opacity:0; visibility:hidden; pointer-events:none; }
+        .alert-card.show { transform:translateX(0); opacity:1; visibility:visible; pointer-events:auto; }
+        .alert-icon { width:24px; height:24px; color:var(--amber); flex-shrink:0; }
+        .alert-title { font-size:14px; font-weight:600; color:var(--amber); margin-bottom:4px; }
+        .alert-text { font-size:14px; color:var(--text-secondary); }
+        .hud-bottom { display:flex; flex-direction:column; align-items:center; gap:12px; }
+        .listen-ind { display:flex; align-items:center; gap:12px; padding:12px 24px; background:var(--bg-card); backdrop-filter:blur(10px); border-radius:24px; border:2px solid transparent; opacity:0; transition:all 0.3s; }
+        .listen-ind.on { opacity:1; border-color:var(--accent); }
+        .waves { display:flex; gap:3px; align-items:center; }
+        .wave { width:3px; height:16px; background:var(--accent); border-radius:2px; animation:wave 1s ease-in-out infinite; }
+        .wave:nth-child(2){animation-delay:0.1s} .wave:nth-child(3){animation-delay:0.2s} .wave:nth-child(4){animation-delay:0.3s}
+        @keyframes wave { 0%,100%{height:8px} 50%{height:20px} }
+        .listen-text { font-size:13px; color:var(--text-muted); }
+        .transcript-display { max-width:600px; padding:12px 20px; background:rgba(79,209,197,0.1); backdrop-filter:blur(10px); border:1px solid rgba(79,209,197,0.3); border-radius:12px; font-size:14px; color:var(--text-secondary); text-align:center; opacity:0; transform:translateY(10px); transition:all 0.3s; }
+        .transcript-display.show { opacity:1; transform:translateY(0); }
+        .transcript-display .label { font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+        .fact-extracted { background:rgba(72,187,120,0.1); border-color:rgba(72,187,120,0.3); }
+        .fact-extracted .label { color:var(--green); }
+        .hud-empty { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; color:var(--text-muted); animation:breathe 3s ease-in-out infinite; }
+        @keyframes breathe { 0%,100%{opacity:0.4} 50%{opacity:0.8} }
+        .hud-empty p { font-size:18px; font-weight:300; letter-spacing:1px; }
+
+        /* OVERWATCH / SENTINEL MODE */
+        #overwatch { position:fixed; inset:0; background:var(--bg-primary); z-index:2000; }
+        
+        .sentinel-focus {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px; height: 250px;
+            border: 2px solid rgba(246, 173, 85, 0.4);
+            border-radius: 50%;
+            animation: pulse-ring 3s infinite;
+            pointer-events: none;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { width: 250px; height: 250px; opacity: 0.6; border-width: 2px; }
+            50% { width: 280px; height: 280px; opacity: 0.2; border-width: 1px; }
+        }
+
+        .sentinel-card {
+            position: absolute; bottom: 18%; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            display: flex; align-items: center; gap: 16px;
+            padding: 16px 32px;
+            border-radius: 50px;
+            backdrop-filter: blur(12px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            min-width: 300px;
+            justify-content: center;
+            background: rgba(246, 173, 85, 0.1);
+            border: 1px solid rgba(246, 173, 85, 0.3);
+            pointer-events: none;
+        }
+        .sentinel-card.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .sentinel-card.hazard {
+            background: rgba(245, 101, 101, 0.15);
+            border: 1px solid rgba(245, 101, 101, 0.4);
+            box-shadow: 0 4px 30px rgba(245, 101, 101, 0.3);
+        }
+        .sentinel-card.hazard .sentinel-text { color: #FC8181; }
+        .sentinel-card.hazard .sentinel-icon { animation: shake 0.5s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .sentinel-card.log {
+            background: rgba(72, 187, 120, 0.15);
+            border: 1px solid rgba(72, 187, 120, 0.4);
+            box-shadow: 0 4px 30px rgba(72, 187, 120, 0.2);
+        }
+        .sentinel-card.log .sentinel-text { color: #68D391; }
+        .sentinel-icon { font-size: 28px; }
+        .sentinel-text { font-size: 15px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--amber); }
+
+        .sentinel-info {
+            position: absolute; top: 80px; left: 24px;
+            display: flex; flex-direction: column; gap: 8px;
+            padding: 16px 20px;
+            background: rgba(246, 173, 85, 0.08);
+            border: 1px solid rgba(246, 173, 85, 0.2);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+        .sentinel-info-item { display: flex; gap: 8px; font-size: 13px; }
+        .sentinel-info-label { color: var(--text-muted); }
+        .sentinel-info-value { color: var(--amber); font-weight: 500; }
+        .sentinel-info-value.taken { color: var(--green); }
+        .sentinel-info-value.danger { color: var(--red); }
+
+        /* MODALS */
+        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; z-index:3000; }
+        .modal-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); padding:24px; max-width:400px; width:90%; }
+        .modal-card h3 { margin-bottom:8px; }
+        .modal-card p { color:var(--text-muted); font-size:14px; margin-bottom:20px; }
+        .modal-actions { display:flex; gap:12px; }
+        .modal-actions .btn { flex:1; justify-content:center; }
+
+        @media (max-width:768px) {
+            .dash-content { grid-template-columns:1fr; }
+            .header-stats { display:none; }
+            .rec-card { width:90%; }
+            .hud-center { align-items:center; padding-right:0; }
+            .sentinel-info { top: auto; bottom: 30%; left: 50%; transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+    <header class="dash-header">
+        <div class="logo">
+            <h1>Mem<span class="pulse">o</span>r4</h1>
+            <span class="tagline">Every conversation remembered</span>
+        </div>
+        <div class="header-stats">
+            <div class="stat"><div class="stat-value" id="stat-people">-</div><div class="stat-label">Family</div></div>
+            <div class="stat"><div class="stat-value" id="stat-memories">-</div><div class="stat-label">Memories</div></div>
+            <button class="btn btn-secondary" onclick="startOverwatch()" style="border-color: var(--amber); color: var(--amber);">🛡️ Sentinel Mode</button>
+            <button class="btn btn-primary" onclick="showHUD()">▶ Start Session</button>
+        </div>
+    </header>
+    <div class="dash-content">
+        <aside class="panel-left">
+            <div class="panel-title">Family Circle</div>
+            <div class="people-list" id="people-list"></div>
+            <button class="btn btn-secondary add-person-btn" onclick="showOnboarding()">+ Add Family Member</button>
+        </aside>
+        <main class="panel-right">
+            <div class="panel-header">
+                <div class="panel-title">Memory Stream</div>
+                <button class="btn btn-ghost" onclick="showNoteModal()">+ Add Note</button>
+            </div>
+            <div class="memory-stream" id="memory-stream"></div>
+        </main>
+    </div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="onboarding" class="hidden">
+    <div class="onboard-card">
+        <div class="onboard-header">
+            <h2>Add Family Member</h2>
+            <p>Help Memor4 recognize and remember them</p>
+        </div>
+        <form id="onboard-form">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="inp-name" placeholder="e.g. Sarah" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Relationship</label>
+                <select class="form-input" id="inp-relation" required>
+                    <option value="">Select...</option>
+                    <option value="spouse">Spouse</option>
+                    <option value="child">Child</option>
+                    <option value="grandchild">Grandchild</option>
+                    <option value="sibling">Sibling</option>
+                    <option value="friend">Friend</option>
+                    <option value="caregiver">Caregiver</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">About them</label>
+                <textarea class="form-input" id="inp-bio" placeholder="What should we remember about them?"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Photo <span style="color:var(--red);">*</span></label>
+                <div class="photo-upload" id="photo-upload">
+                    <input type="file" id="face-image-input" accept="image/*" onchange="handleFaceImageSelect(event)" required>
+                    <img class="photo-upload-preview" id="face-preview" src="" alt="Face preview">
+                    <div class="photo-upload-content">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                        <p>Click to upload a photo</p>
+                        <span class="hint">Clear front-facing photo required</span>
+                    </div>
+                    <div class="photo-upload-actions">
+                        <button type="button" onclick="event.stopPropagation(); clearFaceImage()">Remove</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="hideOnboarding()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+        <!-- Loading Screen -->
+        <div class="onboard-loading" id="onboard-loading">
+            <div class="loading-spinner-container">
+                <div class="loading-ring"></div>
+                <div class="loading-ring"></div>
+                <div class="loading-ring"></div>
+                <div class="loading-profile">
+                    <img id="loading-profile-img" src="" alt="Profile">
+                </div>
+            </div>
+            <div class="loading-status">
+                <div class="loading-title">Processing</div>
+                <div class="loading-text">Adding family member to Memor4...</div>
+                <div class="loading-steps">
+                    <div class="loading-step" id="step-upload">
+                        <div class="loading-step-icon"><div class="spinner"></div></div>
+                        <div class="loading-step-text">Uploading profile data</div>
+                    </div>
+                    <div class="loading-step" id="step-face">
+                        <div class="loading-step-icon"><div class="spinner"></div></div>
+                        <div class="loading-step-text">Analyzing facial features</div>
+                    </div>
+                    <div class="loading-step" id="step-save">
+                        <div class="loading-step-icon"><div class="spinner"></div></div>
+                        <div class="loading-step-text">Saving to database</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+    <div class="hud-video"><video id="hud-video" autoplay playsinline muted></video><div class="hud-overlay"></div></div>
+    <div class="hud-ui">
+        <div class="hud-topbar">
+            <div class="conn-status"><span class="status-dot" id="ws-dot"></span><span id="ws-text">Connecting...</span></div>
+            <div class="hud-time" style="display:none;"><div class="hud-clock" id="hud-clock">--:--</div><div class="hud-duration" id="hud-duration">Session: 0:00</div></div>
+            <button class="btn btn-secondary" onclick="hideHUD()">End Session</button>
+        </div>
+        <div class="hud-center">
+            <div class="rec-card" id="rec-card">
+                <div class="rec-name" id="rec-name">--</div>
+                <div class="rec-relation" id="rec-relation">--</div>
+                <div class="rec-divider"></div>
+                <div class="rec-whisper" id="rec-whisper">...</div>
+            </div>
+            <div class="alert-card" id="alert-card">
+                <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <div><div class="alert-title">Reminder</div><div class="alert-text" id="alert-text">Evening medication at 6:00 PM</div></div>
+            </div>
+            <div class="alert-card" id="reminder-card" style="background:rgba(79,209,197,0.1); border-color:rgba(79,209,197,0.3);">
+                <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                <div><div class="alert-title" style="color:var(--accent);">Last Conversation</div><div class="alert-text" id="reminder-text">...</div></div>
+            </div>
+        </div>
+        <div class="hud-empty" id="hud-empty" style="display:none;"><p>Ready to help you remember</p></div>
+        <div class="hud-bottom">
+            <div class="transcript-display" id="transcript-display">
+                <div class="label">You said:</div>
+                <div id="transcript-text">...</div>
+            </div>
+            <div class="listen-ind" id="listen-ind"><div class="waves"><div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div></div><span class="listen-text">Listening...</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- OVERWATCH / SENTINEL MODE -->
+<div id="overwatch" class="hidden">
+    <div class="hud-video">
+        <video id="overwatch-video" autoplay playsinline muted></video>
+        <div class="hud-overlay" style="background: radial-gradient(circle, transparent 40%, rgba(40, 30, 10, 0.6)); border: 4px solid rgba(246, 173, 85, 0.3);"></div>
+    </div>
+    
+    <div class="hud-ui">
+        <div class="hud-topbar">
+            <div class="conn-status" style="border-color: var(--amber); color: var(--amber); background: rgba(246, 173, 85, 0.1);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <span id="sentinel-status">SENTINEL ACTIVE</span>
+            </div>
+            <div class="hud-time">
+                <div class="hud-clock" id="sentinel-clock">--:--</div>
+                <div class="hud-duration" id="sentinel-duration">Monitoring...</div>
+            </div>
+            <button class="btn btn-secondary" onclick="exitOverwatch()" style="border-color: var(--amber); color: var(--amber);">Exit Sentinel</button>
+        </div>
+
+        <div class="sentinel-focus"></div>
+
+        <div id="sentinel-card" class="sentinel-card">
+            <div class="sentinel-icon" id="sentinel-icon">🛡️</div>
+            <div class="sentinel-text" id="sentinel-text">Monitoring for hazards...</div>
+        </div>
+        
+        <div class="sentinel-info">
+            <div class="sentinel-info-item">
+                <span class="sentinel-info-label">Allergy:</span>
+                <span class="sentinel-info-value" id="sentinel-allergy">Monster energy drinks</span>
+            </div>
+            <div class="sentinel-info-item">
+                <span class="sentinel-info-label">Medication:</span>
+                <span class="sentinel-info-value" id="sentinel-med">Amoxicillin</span>
+            </div>
+            <div class="sentinel-info-item">
+                <span class="sentinel-info-label">Today's Dose:</span>
+                <span class="sentinel-info-value" id="sentinel-dose-status">Not taken</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div id="confirm-modal" class="modal hidden">
+    <div class="modal-card">
+        <h3>Remove Family Member?</h3>
+        <p>This will delete <strong id="del-name"></strong> and all their memories. This cannot be undone.</p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="hideConfirm()">Cancel</button>
+            <button class="btn btn-danger" id="confirm-del-btn">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- ADD NOTE MODAL -->
+<div id="note-modal" class="modal hidden">
+    <div class="modal-card" style="max-width:440px">
+        <h3>Add Caregiver Note</h3>
+        <form id="note-form">
+            <div class="form-group">
+                <label class="form-label">Person</label>
+                <select class="form-input" id="note-person" required></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Note</label>
+                <textarea class="form-input" id="note-text" placeholder="What should we remember?" required></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Topic</label>
+                <select class="form-input" id="note-topic">
+                    <option value="caregiver">General</option>
+                    <option value="health">Health</option>
+                    <option value="events">Events</option>
+                    <option value="preferences">Preferences</option>
+                    <option value="family">Family</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="hideNoteModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Note</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ======================
+// STATE
+// ======================
+let people = [];
+let memories = [];
+let memoriesHash = '';
+let ws = null;
+let mediaStream = null;
+let speechRec = null;
+let currentPersonId = null;
+let sessionStart = null;
+let clockInterval = null;
+let memoryPollInterval = null;
+let alertTimeout = null;
+let faceImageBase64 = null;  // Stores the face image for enrollment
+
+// Speech buffer - accumulate speech for 5 seconds before sending
+let speechBuffer = [];  // Array of transcript segments
+let speechBufferTimeout = null;
+let lastSpeechTime = 0;
+const SPEECH_BUFFER_DURATION = 5000; // 5 seconds of silence before sending
+
+// Overwatch / Sentinel Mode state
+let overwatchActive = false;
+let overwatchStream = null;  // Camera stream
+let sentinel = null;  // OvershootSentinel instance
+let sentinelClockInterval = null;
+let sentinelStart = null;
+
+// Overshoot API Key - loaded from server
+let OVERSHOOT_API_KEY = null;
+
+// ======================
+// TOAST
+// ======================
+function toast(msg, type='success') {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    document.getElementById('toasts').appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+}
+
+// ======================
+// FACE IMAGE HANDLING
+// ======================
+function handleFaceImageSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        toast('Please select an image file', 'error');
+        return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        toast('Image too large. Max 5MB allowed.', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            // Resize image if too large (max 800px width)
+            const maxWidth = 800;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert to JPEG base64 (without the data:image/jpeg;base64, prefix)
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            faceImageBase64 = dataUrl.split(',')[1];
+
+            // Update preview
+            const preview = document.getElementById('face-preview');
+            preview.src = dataUrl;
+            document.getElementById('photo-upload').classList.add('has-image');
+
+            console.log('Face image loaded:', width, 'x', height);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearFaceImage() {
+    faceImageBase64 = null;
+    document.getElementById('face-image-input').value = '';
+    document.getElementById('face-preview').src = '';
+    document.getElementById('photo-upload').classList.remove('has-image');
+}
+
+// ======================
+// API
+// ======================
+async function fetchStats() {
+    try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        document.getElementById('stat-people').textContent = data.data.total_people;
+        document.getElementById('stat-memories').textContent = data.data.total_memories;
+    } catch(e) { console.error(e); }
+}
+
+async function fetchPeople() {
+    try {
+        const res = await fetch('/api/people');
+        const data = await res.json();
+        people = data.data || [];
+        renderPeople();
+    } catch(e) { console.error(e); }
+}
+
+async function fetchMemories() {
+    try {
+        const res = await fetch('/api/memories/recent?limit=20');
+        const data = await res.json();
+        const newMemories = data.data || [];
+        const newHash = JSON.stringify(newMemories.map(m => m.id || m.fact));
+        if (newHash !== memoriesHash) {
+            memories = newMemories;
+            memoriesHash = newHash;
+            renderMemories();
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function createPerson(name, relationship, bio, marker, faceImage = null) {
+    const payload = {name, relationship, bio, marker};
+    if (faceImage) {
+        payload.face_image = faceImage;
+    }
+    const res = await fetch('/api/people', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Failed');
+    return res.json();
+}
+
+async function deletePerson(id) {
+    const res = await fetch(`/api/people/${id}`, {method:'DELETE'});
+    if (!res.ok) throw new Error('Failed');
+    return res.json();
+}
+
+async function addNote(person_id, note, topic) {
+    const res = await fetch('/api/memories/note', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({person_id, note, topic})
+    });
+    return res.json();
+}
+
+async function sendTranscript(transcript) {
+    // Show what was heard on screen
+    const displayEl = document.getElementById('transcript-display');
+    const textEl = document.getElementById('transcript-text');
+    
+    displayEl.classList.remove('fact-extracted');
+    displayEl.classList.add('show');
+    displayEl.querySelector('.label').textContent = 'You said:';
+    textEl.textContent = `"${transcript}"`;
+    
+    // Only send if we have a person detected (red/blue/green/black shirt on screen)
+    if (!currentPersonId) {
+        console.log('⚠️ No person detected - not sending transcript');
+        setTimeout(() => displayEl.classList.remove('show'), 2000);
+        return;
+    }
+    
+    try {
+        const res = await fetch('/listen', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({transcript, person_id: currentPersonId})
+        });
+        
+        const data = await res.json();
+        console.log('📨 Server response:', data);
+        
+        // Show if facts were extracted (no AI response - just silent extraction)
+        if (data.facts_extracted > 0) {
+            displayEl.classList.add('fact-extracted');
+            displayEl.querySelector('.label').textContent = 'Memory saved:';
+            textEl.textContent = `"${transcript}"`;
+            console.log(`💡 Extracted ${data.facts_extracted} facts, saved ${data.facts_saved}:`, data.facts);
+        }
+        
+        // Hide transcript after a delay
+        setTimeout(() => {
+            displayEl.classList.remove('show');
+            displayEl.classList.remove('fact-extracted');
+            displayEl.querySelector('.label').textContent = 'You said:';
+        }, 4000);
+        
+    } catch(e) { 
+        console.error('Error sending transcript:', e);
+        setTimeout(() => displayEl.classList.remove('show'), 2000);
+    }
+}
+
+// ======================
+// RENDER
+// ======================
+function renderPeople() {
+    const el = document.getElementById('people-list');
+    if (!people.length) {
+        el.innerHTML = '<div class="empty-state"><p>No family members yet</p></div>';
+        return;
+    }
+    el.innerHTML = people.map(p => {
+        const avatarHtml = p.face_image_path
+            ? `<img src="${p.face_image_path}" class="person-avatar" alt="${p.display_name}">`
+            : `<div class="marker-dot lg marker-${p.visual_marker || 'blue'}"></div>`;
+
+        return `
+        <div class="person-card" data-id="${p.person_id}">
+            ${avatarHtml}
+            <div class="person-info">
+                <div class="person-name">${p.display_name}</div>
+                <div class="person-relation">${p.relationship}</div>
+            </div>
+            <div class="person-meta">
+                <span class="memory-count">${p.memory_count || 0}</span>
+                <button class="btn btn-danger delete-btn" onclick="event.stopPropagation();showConfirm('${p.person_id}','${p.display_name}')">×</button>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+function timeAgo(ts) {
+    const diff = (Date.now() - new Date(ts).getTime()) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    return Math.floor(diff/86400) + 'd ago';
+}
+
+function renderMemories() {
+    const el = document.getElementById('memory-stream');
+    if (!memories.length) {
+        el.innerHTML = '<div class="empty-state"><p>Memories will appear here</p></div>';
+        return;
+    }
+    el.innerHTML = memories.map(m => `
+        <div class="memory-item">
+            <div class="marker-dot marker-${m.visual_marker || 'blue'}"></div>
+            <div class="memory-content">
+                <div class="memory-header">
+                    <span class="memory-person">${m.display_name || 'Unknown'}</span>
+                    <span class="chip">${m.topic || 'other'}</span>
+                </div>
+                <div class="memory-fact">${m.fact}</div>
+                <div class="memory-footer">
+                    <span class="memory-time">${timeAgo(m.timestamp)}</span>
+                    <span class="memory-source">${m.source === 'caregiver' ? '✏️ Note' : '💬 Conversation'}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ======================
+// VIEWS
+// ======================
+function showOnboarding() {
+    document.getElementById('onboarding').classList.remove('hidden');
+}
+function hideOnboarding() {
+    document.getElementById('onboarding').classList.add('hidden');
+    document.getElementById('onboard-form').reset();
+    clearFaceImage();
+
+    // Reset loading screen
+    const loadingOverlay = document.getElementById('onboard-loading');
+    loadingOverlay.classList.remove('active');
+
+    // Reset all steps
+    ['step-upload', 'step-face', 'step-save'].forEach(id => {
+        const step = document.getElementById(id);
+        step.classList.remove('active', 'complete');
+        const icon = step.querySelector('.loading-step-icon');
+        icon.innerHTML = '<div class="spinner"></div>';
+    });
+}
+
+let delTarget = null;
+function showConfirm(id, name) {
+    delTarget = id;
+    document.getElementById('del-name').textContent = name;
+    document.getElementById('confirm-modal').classList.remove('hidden');
+}
+function hideConfirm() {
+    document.getElementById('confirm-modal').classList.add('hidden');
+    delTarget = null;
+}
+
+function showNoteModal() {
+    const sel = document.getElementById('note-person');
+    sel.innerHTML = people.map(p => `<option value="${p.person_id}">${p.display_name}</option>`).join('');
+    document.getElementById('note-modal').classList.remove('hidden');
+}
+function hideNoteModal() {
+    document.getElementById('note-modal').classList.add('hidden');
+    document.getElementById('note-form').reset();
+}
+
+// ======================
+// HUD
+// ======================
+async function requestCamera(retryCount = 0) {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480},audio:false});
+        return stream;
+    } catch(e) {
+        if (retryCount < 2) {
+            await new Promise(r => setTimeout(r, 500));
+            return requestCamera(retryCount + 1);
+        }
+        throw e;
+    }
+}
+
+async function showHUD() {
+    document.getElementById('dashboard').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+    sessionStart = Date.now();
+
+    // Camera with retry
+    try {
+        mediaStream = await requestCamera();
+        document.getElementById('hud-video').srcObject = mediaStream;
+    } catch(e) {
+        console.error('Camera error:', e.name, e.message);
+        let msg = 'Camera access denied';
+        if (e.name === 'NotFoundError') {
+            msg = 'No camera found';
+        } else if (e.name === 'NotAllowedError') {
+            msg = 'Camera blocked - click camera icon in address bar to allow';
+        } else if (e.name === 'NotReadableError') {
+            msg = 'Camera in use by another app';
+        }
+        toast(msg, 'error');
+        hideHUD();
+        return;
+    }
+
+    // WebSocket
+    connectWS();
+
+    // Clock
+    updateClock();
+    clockInterval = setInterval(updateClock, 1000);
+
+    // Speech
+    initSpeech();
+}
+
+function hideHUD() {
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    
+    if (ws) { ws.close(); ws = null; }
+    if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+    if (speechRec) { speechRec.stop(); speechRec = null; }
+    if (clockInterval) { clearInterval(clockInterval); }
+    if (alertTimeout) { clearTimeout(alertTimeout); }
+    if (speechBufferTimeout) { clearTimeout(speechBufferTimeout); speechBufferTimeout = null; }
+    speechBuffer = [];
+    lastSpeechTime = 0;
+    
+    document.getElementById('rec-card').classList.remove('show');
+    document.getElementById('alert-card').classList.remove('show');
+    document.getElementById('reminder-card').classList.remove('show');
+    document.getElementById('hud-empty').style.display = 'block';
+    currentPersonId = null;
+    
+    fetchStats();
+    fetchMemories();
+}
+
+function connectWS() {
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${location.host}/stream`);
+    
+    ws.onopen = () => {
+        document.getElementById('ws-dot').classList.add('on');
+        document.getElementById('ws-text').textContent = 'Connected';
+        startStreaming();
+    };
+    
+    ws.onclose = () => {
+        document.getElementById('ws-dot').classList.remove('on');
+        document.getElementById('ws-text').textContent = 'Disconnected';
+    };
+    
+    ws.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.type === 'recognition') handleRecognition(data);
+        if (data.type === 'person_visible') handlePersonVisible(data);
+        if (data.type === 'person_away') handlePersonAway(data);  // Brief absence
+        if (data.type === 'person_left') handlePersonLeft(data);  // Gone 60+ seconds
+        if (data.type === 'heartbeat') { /* silent */ }
+    };
+}
+
+function startStreaming() {
+    const video = document.getElementById('hud-video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 640; canvas.height = 480;
+    
+    setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ctx.drawImage(video, 0, 0, 640, 480);
+            canvas.toBlob(blob => {
+                if (blob) blob.arrayBuffer().then(buf => ws.send(buf));
+            }, 'image/jpeg', 0.7);
+        }
+    }, 500);
+}
+
+function handleRecognition(data) {
+    currentPersonId = data.person_id;
+    document.getElementById('hud-empty').style.display = 'none';
+
+    const card = document.getElementById('rec-card');
+    card.className = 'rec-card show marker-' + (data.marker || 'blue');
+    document.getElementById('rec-name').textContent = data.name;
+    document.getElementById('rec-relation').textContent = data.relationship;
+    document.getElementById('rec-whisper').textContent = data.whisper;
+
+    speak(data.whisper);
+
+    // Keep card visible as long as person is on screen (don't auto-hide)
+    console.log('👋 Person recognized:', data.name);
+}
+
+function handlePersonVisible(data) {
+    // Person still visible on screen - keep tracking them
+    currentPersonId = data.person_id;
+    
+    // Make sure card is visible
+    const card = document.getElementById('rec-card');
+    if (!card.classList.contains('show')) {
+        card.classList.add('show');
+    }
+    
+    // Remove "away" styling if they came back
+    card.classList.remove('person-away');
+    document.getElementById('hud-empty').style.display = 'none';
+}
+
+function handlePersonAway(data) {
+    // Person stepped away briefly - keep card but dim it
+    console.log('👀 Person stepped away (conversation continues)');
+    
+    const card = document.getElementById('rec-card');
+    card.classList.add('person-away');  // Dim the card
+    
+    // Keep currentPersonId so conversation continues
+    // Don't reset - they might come back!
+}
+
+function handlePersonLeft(data) {
+    // Person gone for 60+ seconds - end conversation
+    console.log('👋 Person left (60s timeout) - conversation ended');
+    
+    const card = document.getElementById('rec-card');
+    card.classList.remove('show');
+    card.classList.remove('person-away');
+    
+    // Hide reminder card too
+    document.getElementById('reminder-card').classList.remove('show');
+    
+    document.getElementById('hud-empty').style.display = 'block';
+    currentPersonId = null;
+    
+    // Stop any ongoing speech
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+}
+
+async function speak(text) {
+    try {
+        // Try ElevenLabs TTS first
+        const response = await fetch('/api/tts', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({text: text})
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            // Decode base64 audio and play it
+            const audioData = atob(data.audio);
+            const arrayBuffer = new ArrayBuffer(audioData.length);
+            const view = new Uint8Array(arrayBuffer);
+            for (let i = 0; i < audioData.length; i++) {
+                view[i] = audioData.charCodeAt(i);
+            }
+
+            const blob = new Blob([arrayBuffer], {type: 'audio/mpeg'});
+            const audioUrl = URL.createObjectURL(blob);
+            const audio = new Audio(audioUrl);
+
+            audio.play();
+
+            // Clean up URL after playing
+            audio.onended = () => URL.revokeObjectURL(audioUrl);
+
+            console.log('🔊 Playing ElevenLabs audio');
+            return;
+        }
+    } catch(e) {
+        console.warn('ElevenLabs TTS failed, falling back to browser TTS:', e);
+    }
+
+    // Fallback to browser speech synthesis
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(text);
+        utt.rate = 0.9;
+        utt.pitch = 1.0;
+        window.speechSynthesis.speak(utt);
+    }
+}
+
+function updateClock() {
+    const now = new Date();
+    document.getElementById('hud-clock').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    if (sessionStart) {
+        const diff = Math.floor((Date.now() - sessionStart) / 1000);
+        const m = Math.floor(diff / 60);
+        const s = diff % 60;
+        document.getElementById('hud-duration').textContent = `Session: ${m}:${s.toString().padStart(2,'0')}`;
+    }
+}
+
+function initSpeech() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        console.error('Speech Recognition not supported in this browser. Use Chrome.');
+        toast('Speech not supported - use Chrome', 'error');
+        return;
+    }
+    
+    speechRec = new SR();
+    speechRec.continuous = true;
+    speechRec.interimResults = true;  // Show live transcription
+    speechRec.lang = 'en-US';
+    speechRec.maxAlternatives = 1;
+    
+    const listenInd = document.getElementById('listen-ind');
+    const listenText = listenInd.querySelector('.listen-text');
+    
+    speechRec.onstart = () => {
+        console.log('🎤 Speech recognition started');
+        listenInd.classList.add('on');
+        listenText.textContent = 'Listening...';
+    };
+    
+    speechRec.onaudiostart = () => {
+        console.log('🎤 Audio capture started');
+        listenText.textContent = 'Listening... (mic active)';
+        listenInd.style.borderColor = 'var(--green)';
+    };
+    
+    speechRec.onsoundstart = () => {
+        console.log('🔊 Sound detected!');
+        listenText.textContent = 'Hearing sound...';
+        listenInd.style.background = 'rgba(72,187,120,0.2)';
+    };
+    
+    speechRec.onspeechstart = () => {
+        console.log('🗣️ Speech detected!');
+        listenText.textContent = 'Speech detected!';
+        listenInd.style.background = 'rgba(79,209,197,0.3)';
+    };
+    
+    speechRec.onspeechend = () => {
+        console.log('🗣️ Speech ended');
+        listenText.textContent = 'Processing...';
+    };
+    
+    speechRec.onend = () => {
+        console.log('🎤 Speech recognition ended - restarting...');
+        listenInd.classList.remove('on');
+        listenInd.style.background = '';
+        listenInd.style.borderColor = '';
+        listenText.textContent = 'Listening...';
+        
+        if (document.getElementById('hud').classList.contains('hidden')) return;
+        // Restart speech recognition
+        setTimeout(() => {
+            try {
+                speechRec.start();
+            } catch(e) {
+                console.log('Restarting speech recognition...');
+            }
+        }, 300);
+    };
+    
+    speechRec.onerror = (e) => {
+        console.error('🎤 Speech error:', e.error);
+        listenText.textContent = 'Error: ' + e.error;
+        
+        if (e.error === 'not-allowed') {
+            toast('Microphone access denied - click the mic icon in address bar', 'error');
+        } else if (e.error === 'no-speech') {
+            // Normal - no speech detected, will restart automatically
+            console.log('No speech detected, continuing to listen...');
+            listenText.textContent = 'No speech detected...';
+        } else if (e.error === 'audio-capture') {
+            toast('No microphone found', 'error');
+        } else if (e.error === 'network') {
+            toast('Network error - check internet connection', 'error');
+        }
+    };
+    
+    speechRec.onresult = (e) => {
+        const result = e.results[e.results.length - 1];
+        const transcript = result[0].transcript.trim();
+        const confidence = result[0].confidence;
+        
+        console.log(`📝 Got result: "${transcript}" (final: ${result.isFinal}, confidence: ${confidence?.toFixed(2) || 'N/A'})`);
+        
+        // Always show the transcript display during speech
+        const displayEl = document.getElementById('transcript-display');
+        const textEl = document.getElementById('transcript-text');
+        
+        if (result.isFinal && transcript.length > 2) {
+            // Final result - add to buffer array
+            speechBuffer.push(transcript);
+            lastSpeechTime = Date.now();
+            
+            const fullText = speechBuffer.join(' ');
+            console.log('📝 Added to buffer:', transcript);
+            console.log('📝 Full buffer:', fullText);
+            
+            // Show buffered text
+            displayEl.querySelector('.label').textContent = '🎤 Buffering (5s)...';
+            textEl.textContent = `"${fullText}"`;
+            displayEl.classList.add('show');
+            displayEl.classList.remove('fact-extracted');
+            
+            // Reset the 5-second timer
+            if (speechBufferTimeout) {
+                clearTimeout(speechBufferTimeout);
+            }
+            
+            // Send after 5 seconds of no new speech
+            speechBufferTimeout = setTimeout(() => {
+                if (speechBuffer.length > 0) {
+                    const finalText = speechBuffer.join(' ');
+                    if (finalText.length > 5) {
+                        console.log('📤 Sending buffered transcript after 5s:', finalText);
+                        displayEl.querySelector('.label').textContent = 'You said:';
+                        textEl.textContent = `"${finalText}"`;
+                        sendTranscript(finalText);
+                    }
+                    speechBuffer = [];
+                    lastSpeechTime = 0;
+                }
+            }, SPEECH_BUFFER_DURATION);
+            
+        } else if (!result.isFinal && transcript.length > 0) {
+            // Interim result - show live feedback with buffer
+            displayEl.classList.add('show');
+            displayEl.classList.remove('fact-extracted');
+            displayEl.querySelector('.label').textContent = '🎤 Listening...';
+            const bufferText = speechBuffer.join(' ');
+            const fullText = bufferText.length > 0 ? bufferText + ' ' + transcript : transcript;
+            textEl.textContent = `"${fullText}..."`;
+        }
+    };
+    
+    // Request microphone permission explicitly first
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            // Stop the stream immediately, we just needed permission
+            stream.getTracks().forEach(track => track.stop());
+            console.log('✅ Microphone permission granted');
+            
+            try {
+                speechRec.start();
+                console.log('🎤 Speech recognition initialized and started');
+                toast('Microphone ready - start speaking!', 'success');
+            } catch(e) {
+                console.error('Failed to start speech recognition:', e);
+            }
+        })
+        .catch(err => {
+            console.error('Microphone permission denied:', err);
+            toast('Microphone permission needed - allow access when prompted', 'error');
+        });
+}
+
+// ======================
+// FORMS
+// ======================
+document.getElementById('onboard-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('inp-name').value.trim();
+    const rel = document.getElementById('inp-relation').value;
+    const bio = document.getElementById('inp-bio').value.trim();
+
+    if (!name || !rel || !faceImageBase64) {
+        toast('Please fill in all required fields including photo', 'error');
+        return;
+    }
+
+    // Show loading screen with profile image
+    const loadingOverlay = document.getElementById('onboard-loading');
+    const profileImg = document.getElementById('loading-profile-img');
+    const facePreview = document.getElementById('face-preview');
+
+    profileImg.src = facePreview.src;
+    loadingOverlay.classList.add('active');
+
+    // Animate steps
+    const completeStep = (stepId) => {
+        const step = document.getElementById(stepId);
+        step.classList.add('active');
+        step.querySelector('.spinner').outerHTML = '<span class="check">✓</span>';
+        step.classList.remove('active');
+        step.classList.add('complete');
+    };
+
+    try {
+        // Step 1: Upload
+        document.getElementById('step-upload').classList.add('active');
+        await new Promise(r => setTimeout(r, 600));
+        completeStep('step-upload');
+
+        // Step 2: Face analysis
+        document.getElementById('step-face').classList.add('active');
+        await new Promise(r => setTimeout(r, 400));
+
+        const result = await createPerson(name, rel, bio, 'none', faceImageBase64);
+
+        completeStep('step-face');
+
+        // Step 3: Save
+        document.getElementById('step-save').classList.add('active');
+        await new Promise(r => setTimeout(r, 500));
+        completeStep('step-save');
+
+        // Wait a moment to show completion
+        await new Promise(r => setTimeout(r, 800));
+
+        if (result.face_enrolled) {
+            toast(`${name} added with face recognition!`);
+        } else if (faceImageBase64) {
+            toast(`${name} added (face not detected in photo)`);
+        } else {
+            toast(`${name} added!`);
+        }
+
+        hideOnboarding();
+        clearFaceImage();
+        fetchPeople();
+        fetchStats();
+    } catch(e) {
+        loadingOverlay.classList.remove('active');
+        toast('Failed to add person','error');
+        // Reset steps
+        ['step-upload', 'step-face', 'step-save'].forEach(id => {
+            const step = document.getElementById(id);
+            step.classList.remove('active', 'complete');
+            const icon = step.querySelector('.loading-step-icon');
+            icon.innerHTML = '<div class="spinner"></div>';
+        });
+    }
+});
+
+document.getElementById('confirm-del-btn').addEventListener('click', async () => {
+    if (!delTarget) return;
+    try {
+        await deletePerson(delTarget);
+        toast('Removed');
+        hideConfirm();
+        fetchPeople();
+        fetchStats();
+        fetchMemories();
+    } catch(e) {
+        toast('Failed to delete','error');
+    }
+});
+
+document.getElementById('note-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const person_id = document.getElementById('note-person').value;
+    const note = document.getElementById('note-text').value.trim();
+    const topic = document.getElementById('note-topic').value;
+    
+    if (!person_id || !note) return;
+    
+    try {
+        await addNote(person_id, note, topic);
+        toast('Note saved!');
+        hideNoteModal();
+        fetchMemories();
+        fetchStats();
+    } catch(e) {
+        toast('Failed to save','error');
+    }
+});
+
+// ======================
+// INIT
+// ======================
+window.addEventListener('load', () => {
+    fetchStats();
+    fetchPeople();
+    fetchMemories();
+    memoryPollInterval = setInterval(fetchMemories, 3000);
+});
+
+// Fail-safe: manual hazard trigger with 'M' key in Sentinel mode
+window.addEventListener('keydown', (e) => {
+    if (overwatchActive && (e.key === 'm' || e.key === 'M')) {
+        showSentinelFeedback('... you are allergic', '⚠️', 'hazard');
+    }
+});
+
+// ======================
+// OVERWATCH / SENTINEL MODE (Overshoot SDK)
+// ======================
+async function startOverwatch() {
+    overwatchActive = true;
+    sentinelStart = Date.now();
+    
+    document.getElementById('dashboard').classList.add('hidden');
+    document.getElementById('overwatch').classList.remove('hidden');
+    document.getElementById('sentinel-status').textContent = 'INITIALIZING...';
+    
+    // Fetch safety state from server
+    try {
+        const configResp = await fetch('/api/safety-state');
+        const configData = await configResp.json();
+        const safetyState = configData.data;
+        
+        // Update UI with safety state
+        document.getElementById('sentinel-allergy').textContent = safetyState.allergy || 'Monster energy drinks';
+        document.getElementById('sentinel-med').textContent = safetyState.med_name || 'Amoxicillin';
+        const doseStatus = document.getElementById('sentinel-dose-status');
+        if (safetyState.meds_taken) {
+            doseStatus.textContent = 'Taken ✓';
+            doseStatus.classList.add('taken');
+        } else {
+            doseStatus.textContent = 'Not taken';
+            doseStatus.classList.remove('taken');
+        }
+        
+        // Fetch Overshoot API key
+        const keyResp = await fetch('/api/overshoot-key');
+        const keyData = await keyResp.json();
+        OVERSHOOT_API_KEY = keyData.key;
+        
+        if (!OVERSHOOT_API_KEY) {
+            console.warn('Overshoot API key not configured - running in demo mode');
+            document.getElementById('sentinel-status').textContent = 'DEMO MODE';
+        } else {
+            // Try to start Overshoot SDK
+            await startOvershootDetection(safetyState);
+        }
+        
+    } catch(e) {
+        console.error('Config fetch error:', e);
+        document.getElementById('sentinel-status').textContent = 'ACTIVE (OFFLINE)';
+    }
+    
+    // Start clock
+    updateSentinelClock();
+    sentinelClockInterval = setInterval(updateSentinelClock, 1000);
+    
+    toast('Sentinel Mode activated', 'success');
+}
+
+async function startOvershootDetection(safetyState) {
+    // Dynamically import Overshoot SDK as ES module
+    try {
+        console.log('🛡️ Loading Overshoot SDK...');
+        const { RealtimeVision } = await import('https://esm.sh/@overshoot/sdk@0.1.0-alpha.2');
+        
+        const prompt = buildHazardPrompt(safetyState);
+        console.log('🛡️ Starting Overshoot with prompt:', prompt.substring(0, 100) + '...');
+        
+        sentinel = new RealtimeVision({
+            apiUrl: 'https://cluster1.overshoot.ai/api/v0.2',
+            apiKey: OVERSHOOT_API_KEY,
+            prompt: prompt,
+            source: {
+                type: 'camera',
+                cameraFacing: 'environment'
+            },
+            processing: {
+                clip_length_seconds: 1,
+                delay_seconds: 1,
+                fps: 30,
+                sampling_ratio: 0.1
+            },
+            onResult: (result) => {
+                console.log('🛡️ Overshoot result:', result);
+                handleOvershootResult(result);
+            },
+            onError: (error) => {
+                console.error('🛡️ Overshoot error:', error);
+            }
+        });
+        
+        await sentinel.start();
+        
+        // Get the video stream and attach to video element
+        const stream = sentinel.getMediaStream();
+        if (stream) {
+            document.getElementById('overwatch-video').srcObject = stream;
+        }
+        
+        document.getElementById('sentinel-status').textContent = 'SENTINEL ACTIVE';
+        console.log('🛡️ Overshoot Sentinel started successfully!');
+        
+    } catch(e) {
+        console.error('Overshoot SDK error:', e);
+        document.getElementById('sentinel-status').textContent = 'AI ERROR: ' + e.message;
+    }
+}
+
+function buildHazardPrompt(safetyState) {
+    const allergy = safetyState.allergy || 'Monster energy drinks';
+    const medName = safetyState.med_name || 'Amoxicillin';
+    const medsTaken = safetyState.meds_taken;
+    const medStatus = medsTaken ? 'ALREADY TAKEN TODAY' : 'NOT YET TAKEN TODAY';
+    
+    return `Analyze this image for safety hazards. Patient is ALLERGIC TO: ${allergy}. Medication: ${medName} (${medStatus}).
+
+LOOK FOR:
+- Monster Energy drink can (green claw logo) = HAZARD
+- Any energy drink = HAZARD  
+- Medication bottle when already taken = HAZARD
+
+Respond with ONLY JSON:
+If hazard found: {"type":"hazard","text":"Warning: ${allergy} detected!"}
+If medication found and NOT taken: {"type":"log","text":"Medication logged"}
+Otherwise: {"type":"none"}`;
+}
+
+function handleOvershootResult(result) {
+    if (!result.ok) {
+        console.warn('Inference error:', result.error);
+        return;
+    }
+    
+    try {
+        let parsed;
+        const text = result.result.trim();
+        
+        try {
+            parsed = JSON.parse(text);
+        } catch {
+            const match = text.match(/\{[^}]+\}/);
+            if (match) parsed = JSON.parse(match[0]);
+            else return;
+        }
+        
+        if (parsed.type === 'hazard') {
+            showSentinelFeedback(parsed.text, '⚠️', 'hazard');
+            playAlertSound('hazard');
+        } else if (parsed.type === 'log') {
+            showSentinelFeedback(parsed.text, '✅', 'log');
+            document.getElementById('sentinel-dose-status').textContent = 'Taken ✓';
+            document.getElementById('sentinel-dose-status').classList.add('taken');
+            fetch('/api/safety-state/meds-taken', { method: 'POST' });
+            playAlertSound('success');
+        }
+    } catch(e) {
+        console.warn('Parse error:', e);
+    }
+}
+
+async function exitOverwatch() {
+    overwatchActive = false;
+    
+    // Stop Overshoot Sentinel
+    if (sentinel) {
+        try {
+            await sentinel.stop();
+        } catch(e) {
+            console.warn('Error stopping sentinel:', e);
+        }
+        sentinel = null;
+    }
+    
+    // Stop camera
+    if (overwatchStream) {
+        overwatchStream.getTracks().forEach(t => t.stop());
+        overwatchStream = null;
+    }
+    
+    // Stop clock
+    if (sentinelClockInterval) {
+        clearInterval(sentinelClockInterval);
+        sentinelClockInterval = null;
+    }
+    
+    // Hide UI
+    document.getElementById('overwatch').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    
+    // Reset card state
+    const card = document.getElementById('sentinel-card');
+    card.classList.remove('show', 'hazard', 'log');
+    document.getElementById('sentinel-text').textContent = 'Monitoring for hazards...';
+    document.getElementById('sentinel-icon').textContent = '🛡️';
+    document.getElementById('sentinel-status').textContent = 'OFFLINE';
+    
+    fetchStats();
+    fetchMemories();
+    toast('Sentinel Mode deactivated', 'success');
+}
+
+function playAlertSound(type) {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        if (type === 'hazard') {
+            osc.frequency.value = 880;
+            osc.type = 'square';
+            gain.gain.value = 0.3;
+        } else {
+            osc.frequency.value = 523;
+            osc.type = 'sine';
+            gain.gain.value = 0.2;
+        }
+        
+        osc.start();
+        setTimeout(() => {
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            setTimeout(() => osc.stop(), 300);
+        }, 200);
+    } catch(e) {
+        console.warn('Could not play alert sound:', e);
+    }
+}
+
+function showSentinelFeedback(text, icon, type) {
+    const card = document.getElementById('sentinel-card');
+    const textEl = document.getElementById('sentinel-text');
+    const iconEl = document.getElementById('sentinel-icon');
+    
+    // Set content
+    textEl.textContent = text;
+    iconEl.textContent = icon;
+    
+    // Set style based on type
+    card.className = `sentinel-card show ${type}`;
+    
+    // Audio feedback
+    if (type === 'hazard') {
+        playTone(300, 'sawtooth', 0.3);
+        speak("Warning. " + text);
+    } else if (type === 'log') {
+        playTone(800, 'sine', 0.15);
+        speak(text);
+    }
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        card.classList.remove('show');
+        // Reset to default state
+        setTimeout(() => {
+            if (!card.classList.contains('show')) {
+                card.classList.remove('hazard', 'log');
+                textEl.textContent = 'Monitoring for hazards...';
+                iconEl.textContent = '🛡️';
+            }
+        }, 400);
+    }, 5000);
+}
+
+function playTone(freq, type, vol) {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+    } catch(e) {
+        console.log('Audio not available:', e);
+    }
+}
+
+function updateSentinelClock() {
+    const now = new Date();
+    document.getElementById('sentinel-clock').textContent = now.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'});
+    
+    if (sentinelStart) {
+        const diff = Math.floor((Date.now() - sentinelStart) / 1000);
+        const m = Math.floor(diff / 60);
+        const s = diff % 60;
+        document.getElementById('sentinel-duration').textContent = `Monitoring: ${m}:${s.toString().padStart(2, '0')}`;
+    }
+}
+</script>
+</body>
+</html>
